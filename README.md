@@ -30,15 +30,15 @@ The defaults can be overridden with Options.
 
 ```go
 c := patch.New(
-	// The default timeout is 30 seconds. This can be
-    // changed. Setting a timeout of 0 means no timeout.
-	patch.WithTimeout(10 * time.Second),
+    // The default timeout is 30 seconds. This can be
+    // changed. Setting a timeout of 0 means no timeout. 
+    patch.WithTimeout(10 * time.Second),
     
     // The default status validator returns true for
     // any 2xx status code. To remove the status
     // validator, pass nil instead of a func.
     patch.WithStatusValidator(func(status int) bool {
-    	return status == 200
+        return status == 200
     }),
     
     // By default, request bodies are encoded as JSON.
@@ -62,7 +62,7 @@ For flexibility, a custom base client doesn't have to be of type `http.Client{}`
 
 ```go
 type httpClient interface {
-	Do(*http.Request) (*http.Response, error)
+    Do(*http.Request) (*http.Response, error)
 }
 ```
 
@@ -70,14 +70,14 @@ type httpClient interface {
 
 ```go
 user := struct{
-	Name string `json:"name"`
+    Name string `json:"name"`
     Age int `json:"age"
 }{}
 
 // The response is returned and also decoded into the last argument
 rsp, err := client.Get(ctx, http://example.com/user/204, &user)
 if err != nil {
-	panic(err)
+    panic(err)
 }
 ```
 
@@ -99,10 +99,10 @@ Helper functions also exist for `PUT`, `PATCH` and `DELETE`.
 
 ```go
 body := struct{
-	Name string `json:"name"`
+    Name string `json:"name"`
     Age int `json:"age"`
 }{
-	Name: "Homer Simpson",
+    Name: "Homer Simpson",
     Age: 39,
 }
 
@@ -117,8 +117,8 @@ The helper functions `Get`, `Post`, `Put`, `Patch` and `Delete` are built on top
 
 ```go
 req := &patch.Request{
-	Method: "GET"
-	URL:    "http://example.com"
+    Method: "GET"
+    URL:    "http://example.com"
 }
 
 // Send is non-blocking and returns a Future
@@ -138,7 +138,7 @@ Encoding can also be set per-request by setting the `Encoder` field on the reque
 
 ```go
 req := &patch.Request{
-	Encoder: &patch.EncoderFormURL{},
+    Encoder: &patch.EncoderFormURL{},
 }
 ```
 
@@ -159,21 +159,21 @@ The Content-Type header is set to `application/x-www-form-urlencoded` but this c
 
 ```go
 enc := &patch.EncoderFormURL{
-	TagAlias: "url",
+    TagAlias: "url",
 }
 
 client, err := patch.New(patch.WithEncoder(enc))
 if err != nil {
-	panic(err)
+    panic(err)
 }
 
 // The body will be encoded as "name=Homer&age=39"
 
 body := struct{
-	Name string `url:"name"`
+    Name string `url:"name"`
     Age int `url:"age"`
 }{
-	Name: "Homer Simpson",
+    Name: "Homer Simpson",
     Age: 39,
 }
 
@@ -186,8 +186,8 @@ A custom encoder can be provided. It must implement the following interface.
 
 ```go
 type Encoder interface {
-	ContentType() string
-	Encode(interface{}) (io.Reader, error)
+    ContentType() string
+    Encode(interface{}) (io.Reader, error)
 }
 ```
 
@@ -198,7 +198,7 @@ If the final argument `v` to `Get`, `Post`, `Put`, `Patch` or `Delete` is not `n
 ```go
 rsp, err := client.Get(ctx, "http://example.com", nil, nil)
 if err != nil {
-	panic(err)
+    panic(err)
 }
 
 v := struct{...}{}
@@ -239,60 +239,60 @@ Here is an example of integrating with the [GitHub API](https://developer.github
 
 ```go
 type Repository struct {
-	ID   int    `json:"id"`
-	Name string `json:"name"`
+    ID   int    `json:"id"`
+    Name string `json:"name"`
 }
 
 type GithubError struct {
-	Message string `json:"message"`
+    Message string `json:"message"`
 }
 
 func (e *GithubError) Error() string {
-	return e.Message
+    return e.Message
 }
 
 type RepoService struct {
-	client *patch.Client
+    client *patch.Client
 }
 
 func NewRepoService() *RepoService {
-	sv := func(status int) bool {
-		if status >= 200 && status < 300 {
-			return true
-		}
+    sv := func(status int) bool {
+        if status >= 200 && status < 300 {
+            return true
+        }
 
-		// Allow 4xx status codes because we
-		// expect to be able to decode them
-		if status >= 400 && status < 500 {
-			return true
-		}
+        // Allow 4xx status codes because we
+        // expect to be able to decode them
+        if status >= 400 && status < 500 {
+            return true
+        }
 
         return false
-	}
+    }
 
-	return &RepoService{
-		client: patch.New(
-			patch.WithBaseURL("https://api.github.com"),
-			patch.WithStatusValidator(sv),
-		),
-	}
+    return &RepoService{
+        client: patch.New(
+            patch.WithBaseURL("https://api.github.com"),
+            patch.WithStatusValidator(sv),
+        ),
+    }
 }
 
 func (s *RepoService) List(ctx context.Context, username string) ([]*Repository, error) {
-	path := fmt.Sprintf("/users/%s/repos", username)
-	rsp, err := s.client.Get(ctx, path, nil)
-	if err != nil {
-		panic(err)
-	}
+    path := fmt.Sprintf("/users/%s/repos", username)
+    rsp, err := s.client.Get(ctx, path, nil)
+    if err != nil {
+        panic(err)
+    }
 
-	var repos []*Repository
-	var apiErr *GithubError
+    var repos []*Repository
+    var apiErr *GithubError
 
-	if err := rsp.DecodeJSON(On2xx(repos), On4xx(apiErr)); err != nil {
-		return nil, err
-	}
+    if err := rsp.DecodeJSON(On2xx(repos), On4xx(apiErr)); err != nil {
+        return nil, err
+    }
 
-	return repos, apiErr
+    return repos, apiErr
 }
 
 ```
