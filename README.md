@@ -59,8 +59,10 @@ c := NewFromBaseClient(&bc)
 
 For flexibility, a custom base client doesn't have to be of type `http.Client{}`. It just has to implement the following interface. Note that the `WithTimeout` option won't work with non-standard base client types.
 
+An `http.Client` can be wrapped in a custom `Doer` implementation to build middleware.
+
 ```go
-type httpClient interface {
+type Doer interface {
     Do(*http.Request) (*http.Response, error)
 }
 ```
