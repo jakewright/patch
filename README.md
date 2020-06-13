@@ -8,7 +8,6 @@ Patch is an HTTP client built on top of [net/http](https://golang.org/pkg/net/ht
 - Option to bring your own `http.Client{}`
 - Easy asynchronous requests
 - Response status code validation
-- Post-processing of responses via a hooks mechanism
 
 ## Installation
 
