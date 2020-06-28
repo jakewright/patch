@@ -116,13 +116,27 @@ func (c *Client) Send(request *Request) *Future {
 
 	go func() {
 		defer close(done)
-		ftr.response, ftr.err = c.do(request)
+		ftr.response, ftr.err = c.send(request)
 	}()
 
 	return ftr
 }
 
-func (c *Client) do(request *Request) (*Response, error) {
+func (c *Client) Do(req *http.Request) (*http.Response, error) {
+	rsp, err := c.BaseClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	// Execute the status validator if set
+	if c.StatusValidator != nil && !c.StatusValidator(rsp.StatusCode) {
+		return rsp, BadStatusError(rsp.StatusCode)
+	}
+
+	return rsp, nil
+}
+
+func (c *Client) send(request *Request) (*Response, error) {
 	if err := request.validate(); err != nil {
 		return nil, err
 	}
@@ -170,19 +184,14 @@ func (c *Client) do(request *Request) (*Response, error) {
 
 	/* Make the HTTP request */
 
-	rsp, err := c.BaseClient.Do(req)
+	rsp, err := c.Do(req)
 	if err != nil {
-		return nil, err
+		return rsp, err
 	}
 
 	// From this point on, all return values should return response, even if there's an error
 	// so that the caller can see all of the information about the response.
 	response := &Response{Response: rsp}
-
-	// Execute the status validator if set
-	if c.StatusValidator != nil && !c.StatusValidator(rsp.StatusCode) {
-		return response, BadStatusError(rsp.StatusCode)
-	}
 
 	return response, nil
 }
