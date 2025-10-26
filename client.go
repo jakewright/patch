@@ -185,13 +185,5 @@ func (c *Client) send(request *Request) (*Response, error) {
 	/* Make the HTTP request */
 
 	rsp, err := c.Do(req)
-	if err != nil {
-		return rsp, err
-	}
-
-	// From this point on, all return values should return response, even if there's an error
-	// so that the caller can see all of the information about the response.
-	response := &Response{Response: rsp}
-
-	return response, nil
+	return &Response{Response: rsp}, err
 }
