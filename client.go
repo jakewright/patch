@@ -8,10 +8,11 @@ import (
 
 // Client is an HTTP client that uses the BaseClient to send requests
 type Client struct {
-	BaseURL         string
-	DefaultEncoder  Encoder
-	StatusValidator func(int) bool
-	BaseClient      Doer
+	BaseURL             string
+	DefaultEncoder      Encoder
+	RequestInterceptor  func(*http.Request) (*http.Request, error)
+	ResponseInterceptor func(*http.Response) (*http.Response, error)
+	BaseClient          Doer
 }
 
 // Doer executes HTTP requests. It is implemented by http.Client{}.
@@ -32,9 +33,9 @@ func New(opts ...Option) *Client {
 // NewFromBaseClient returns a new Client that wraps BaseClient
 func NewFromBaseClient(baseClient Doer, opts ...Option) *Client {
 	c := &Client{
-		DefaultEncoder:  &EncoderJSON{},
-		StatusValidator: DefaultStatusValidator,
-		BaseClient:      baseClient,
+		DefaultEncoder:      &EncoderJSON{},
+		ResponseInterceptor: DefaultResponseInterceptor,
+		BaseClient:          baseClient,
 	}
 
 	for _, opt := range opts {
@@ -123,17 +124,24 @@ func (c *Client) Send(request *Request) *Future {
 }
 
 func (c *Client) Do(req *http.Request) (*http.Response, error) {
+	if c.RequestInterceptor != nil {
+		var err error
+		req, err = c.RequestInterceptor(req)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	rsp, err := c.BaseClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
 
-	// Execute the status validator if set
-	if c.StatusValidator != nil && !c.StatusValidator(rsp.StatusCode) {
-		return rsp, BadStatusError(rsp.StatusCode)
+	if c.ResponseInterceptor != nil {
+		rsp, err = c.ResponseInterceptor(rsp)
 	}
 
-	return rsp, nil
+	return rsp, err
 }
 
 func (c *Client) send(request *Request) (*Response, error) {

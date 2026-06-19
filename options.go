@@ -9,10 +9,7 @@ import (
 // DefaultTimeout is the default time limit for requests made by the client.
 const DefaultTimeout = 30 * time.Second
 
-// DefaultStatusValidator returns true for 2xx statuses, otherwise false.
-var DefaultStatusValidator = func(status int) bool {
-	return status >= 200 && status < 300
-}
+var DefaultResponseInterceptor = StatusValidatorInterceptor(Accept2xx)
 
 type Option func(c *Client)
 
@@ -34,14 +31,33 @@ func WithTimeout(d time.Duration) Option {
 	}
 }
 
-func WithStatusValidator(f func(int) bool) Option {
-	return func(c *Client) {
-		c.StatusValidator = f
-	}
-}
-
 func WithEncoder(enc Encoder) Option {
 	return func(c *Client) {
 		c.DefaultEncoder = enc
 	}
+}
+
+func WithRequestInterceptor(f func(*http.Request) (*http.Request, error)) Option {
+	return func(c *Client) {
+		c.RequestInterceptor = f
+	}
+}
+
+func WithResponseInterceptor(f func(*http.Response) (*http.Response, error)) Option {
+	return func(c *Client) {
+		c.ResponseInterceptor = f
+	}
+}
+
+func StatusValidatorInterceptor(f func(status int) bool) func(*http.Response) (*http.Response, error) {
+	return func(rsp *http.Response) (*http.Response, error) {
+		if !f(rsp.StatusCode) {
+			return rsp, BadStatusError(rsp.StatusCode)
+		}
+		return rsp, nil
+	}
+}
+
+var Accept2xx = func(status int) bool {
+	return status >= 200 && status < 300
 }
